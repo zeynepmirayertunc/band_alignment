@@ -1,27 +1,30 @@
+"""
+TODO: Explain the script
+"""
+
 import numpy as np
 import cv2
 import os
 import time
 import NIR_REDbuffer
+import settings
 
 start_time = time.time()
 
 
-# input_folder = "D:\\3_Sinif\Staj\\000"
-input_folder = "D:\\3_Sinif\Staj\\ceylanpinar"
-directory = os.listdir(input_folder)
-# print(directory)
+redimage_list, nirimage_list = NIR_REDbuffer.ayıkla(settings.dircont)
 
-redimage_list, nirimage_list = NIR_REDbuffer.ayıkla(input_folder)
-
-
-# print(len(redimage_list),redimage_list)
-# print(len(nirimage_list),nirimage_list)
 def align_images(moving, fixed):
+    """
+    TODO: Explain the function
+    """
     MIN_MATCH_COUNT = 10
 
     moving_im = cv2.imread(moving, 0)  # image to be distorted
     fixed_im = cv2.imread(fixed, 0)  # image to be matched
+
+    # !!! You can add the options in settings file and refactor this function to be able to run this function with initial settings.
+    
 
     # Initiate SIFT detector
     # sift = cv2.ORB_create(nfeatures=10000)
@@ -75,13 +78,13 @@ for i in range(0, len(redimage_list)):
     # offset = [0, 0, 0, 0]
     # print(i)
     # tup = image_list
-    nir = align_images(os.path.join(input_folder, nirimage_list[i]),
-                       os.path.join(input_folder, redimage_list[i]))
+    nir = align_images(os.path.join(settings.dircont, nirimage_list[i]),
+                       os.path.join(settings.dircont, redimage_list[i]))
     #
     # red = align_images(os.path.join(input_folder, redimage_list[i]),
     #                    os.path.join(input_folder, nirimage_list[i]))
 
-    cv2.imwrite('D:\\3_Sinif\\Staj\\Ceylanpinar_NIR_Align\\' "NIR" + str(i) + ".tif", nir)
+    cv2.imwrite(os.path.join(settings.out_dir, "NIR" + str(i) + ".tif") , nir)
     # cv2.imwrite('D:\\3_Sinif\\Staj\\REDalign\\' "RED" + str(i) + ".tif", red)
 print(str(i) + "\t", "Images Completely Merged.")
 print("--- %s seconds ---" % (time.time() - start_time))

@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+"""
+TODO: Explain the script
+
+"""
 import os
 from GPSPhoto import gpsphoto
 import simplekml
@@ -7,21 +12,25 @@ from shapely.geometry import Point
 from geopandas import GeoDataFrame
 import matplotlib.pyplot as plt
 from glob import glob
+import settings
 
-kml = simplekml.Kml()
-kml2 = simplekml.Kml()
+# Please follow the PEP8 Guide https://www.python.org/dev/peps/pep-0008/
+# Explain your variables and functions
+kml = simplekml.Kml() # Why? 
+kml2 = simplekml.Kml() # Why?
 
 coordinates = []
 images = []
-islemimages = []
-# dircont = "D:\\3_Sinif\Staj\\000"
-dircont = "D:\\3_Sinif\Staj\\ceylanpinar"
-directory = os.listdir(dircont)
+islemimages = [] 
 
 
-# print(directory)
-def ayıkla(dircont):
-    for files in directory:
+
+
+def ayıkla(dircont):  # Is it possible to rename this function? "ı" letter can be problematic for some systems.
+    """
+    TODO: Explain the function
+    """
+    for files in settings.directory:
         if files.endswith('.tif') and files[-5].endswith('3'):
             file_path = os.path.join(dircont, files)
             images.append(file_path)
@@ -35,7 +44,7 @@ def ayıkla(dircont):
     kml.save("photos.kml")
     df = pd.DataFrame.from_dict(coordinates)
     df["Image Names"] = images
-    # print(df)
+    
     df.to_csv('coordinates.csv')
     df2 = pd.read_csv('coordinates.csv')
     geometry = [Point(xy) for xy in zip(df.Longitude, df.Latitude)]
@@ -44,7 +53,7 @@ def ayıkla(dircont):
     buffer = geo_df.geometry[30].buffer(0.002)
     selected = geo_df.intersects(buffer)
     df["Selected"] = selected
-    # print(df)
+ 
 
     new = []
     for i in range(len(df)):
@@ -62,11 +71,8 @@ def ayıkla(dircont):
         for numbers in islemimages:
             if items[-14:-6] == numbers[-14:-6]:
                 newlist.append(items)
-    # print(len(new),new)
-    # islemimages.extend(newlist)
+
     return islemimages,newlist
 
-# redimagelist,nirimagelist = ayıkla(dircont)
-# print(len(redimagelist),redimagelist)
-# print(len(nirimagelist),nirimagelist)
+
 
