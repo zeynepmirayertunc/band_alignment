@@ -1,5 +1,12 @@
+# -*- coding: utf-8 -*-
+
 """
-TODO: Explain the script
+@author: Zeynep Miray
+
+Feature-based methods are methods that look for salient features in both images (such as edges, lines, and vertices)
+ and then try to match them in a separate matching step. Many feature-based methods are available. In this script,
+ it is aimed to perform the most accurate alignment of an NIR band image to a Red band image or vice versa using
+ the def(align_images) function below, then save these images to a file.
 """
 
 import numpy as np
@@ -11,38 +18,47 @@ import settings
 
 start_time = time.time()
 
+redimage_list, nirimage_list = NIR_REDbuffer.select_images(settings.dir_ALLimages)
 
-redimage_list, nirimage_list = NIR_REDbuffer.ayıkla(settings.dircont)
 
-def align_images(moving, fixed):
+def align_images(moving, fixed, dtc, mtch):
     """
-    TODO: Explain the function
+    This align_images function performs the alignment of two images relative to each other using the "feature-based"
+     image alignment technique. A sparse set of features is detected in one image and mapped to features in the other
+     image. Binary options are presented to the user in choosing the descriptor method, matcher method and motion
+     model to be used for these operations.
+
+    Inputs:
+            moving - Image to be distorted (the image you want to align)
+            fixed  - The image to be matched
+            dtc    - dtc is the value used for detector selection. If you enter 1, you will use SIFT detector, if you
+                      enter 2, you will use SURF detector. (The settings.py file should be used to change the hessian
+                      threshold for the SURF method)
+
+            mtch   - mtch is the value used for matcher selection. If you enter "f" you will use FlannBased mathcer,
+             if you enter "b" you will use Brute Force matcher.
+
+
+    Outputs:
+           out_img - An image aligned to the other image that has the same dimensions as the original image.
     """
     MIN_MATCH_COUNT = 10
 
-    moving_im = cv2.imread(moving, 0)  # image to be distorted
-    fixed_im = cv2.imread(fixed, 0)  # image to be matched
+    moving_im = cv2.imread(moving, cv2.IMREAD_GRAYSCALE)  # read the image to be distorted
+    fixed_im = cv2.imread(fixed, cv2.IMREAD_GRAYSCALE)  # read the image to be matched
 
-    # !!! You can add the options in settings file and refactor this function to be able to run this function with initial settings.
-    
+    # Initiate detector
+    detector = settings.switch_detector(dtc)
 
-    # Initiate SIFT detector
-    # sift = cv2.ORB_create(nfeatures=10000)
-    surf = cv2.xfeatures2d_SURF.create(19)
-
-    # find the keypoints and descriptors with SIFT
-    kp1, des1 = surf.detectAndCompute(moving_im, None)
-    kp2, des2 = surf.detectAndCompute(fixed_im, None)
+    # find the keypoints and descriptors
+    kp1, des1 = detector.detectAndCompute(moving_im, None)
+    kp2, des2 = detector.detectAndCompute(fixed_im, None)
 
     # use FLANN method to match keypoints. Brute force matches not appreciably better
     # and added processing time is significant.
-    # FLANN_INDEX_KDTREE = 0
-    # index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    # search_params = dict(checks=50)
+    matcher = settings.switch_matcher(mtch)
 
-    # matcher = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
-    # matcher =cv2.BFMatcher()
-    matcher = cv2.FlannBasedMatcher()
+    # find the corresponding point pairs (match descriptors)
     matches = matcher.knnMatch(des1, des2, k=2)
 
     # store all the good matches following Lowe's ratio test.
@@ -53,38 +69,37 @@ def align_images(moving, fixed):
 
     print(str(len(good)) + " Matches were Found")
 
+    # Extract location of good matches
     if len(good) > MIN_MATCH_COUNT:
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
-        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
-        # M, _ = cv2.estimateAffine2D(src_pts, dst_pts)
-        # M = np.vstack((M, [0, 0, 1]))
+        # choose the appropriate motion model(If you want to use the findHomography method,
+        # simply change this part to settings.findHomography(src_pts, dst_pts) )
+        M, _ = settings.estimateAffine2D(src_pts, dst_pts)
 
         h, w = moving_im.shape  # shape of input images, needs to remain the same for output
 
-        outimg = cv2.warpPerspective(moving_im, M, (w, h))
+        # Warp source image to destination based on motion model
+        out_img = cv2.warpPerspective(moving_im, M, (w, h))
 
-        return outimg
+        return out_img
 
 
     else:
         print("Not enough matches are found for moving image")
-        matchesMask = None
 
 
 print("The merging starting. Depending on the excess of the images this can take from a few seconds to many minutes.")
 for i in range(0, len(redimage_list)):
-    # offset = [0, 0, 0, 0]
-    # print(i)
-    # tup = image_list
-    nir = align_images(os.path.join(settings.dircont, nirimage_list[i]),
-                       os.path.join(settings.dircont, redimage_list[i]))
-    #
-    # red = align_images(os.path.join(input_folder, redimage_list[i]),
-    #                    os.path.join(input_folder, nirimage_list[i]))
+    nir = align_images(os.path.join(settings.dir_ALLimages, nirimage_list[i]),
+                       os.path.join(settings.dir_ALLimages, redimage_list[i]), 2, "f")
 
-    cv2.imwrite(os.path.join(settings.out_dir, "NIR" + str(i) + ".tif") , nir)
-    # cv2.imwrite('D:\\3_Sinif\\Staj\\REDalign\\' "RED" + str(i) + ".tif", red)
+    red = align_images(os.path.join(settings.dir_ALLimages, redimage_list[i]),
+                       os.path.join(settings.dir_ALLimages, nirimage_list[i]), 2, "f")
+
+    cv2.imwrite(os.path.join(settings.out_NIRdir, "NIR" + str(i) + ".tif"), nir)
+    cv2.imwrite(os.path.join(settings.out_REDdir, "RED" + str(i) + ".tif"), red)
+
 print(str(i) + "\t", "Images Completely Merged.")
 print("--- %s seconds ---" % (time.time() - start_time))
