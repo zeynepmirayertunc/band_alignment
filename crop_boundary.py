@@ -1,45 +1,70 @@
+# -*- coding: utf-8 -*-
+"""
+@author: Zeynep Miray
+
+Aligned images obtained using NIR_REDcombine.py are saved using the size of the original images when saving to a file.
+ Therefore, the parts cut from the aligned images appear as black corners. With the help of the following function
+ in this script, the cropping of these black corners is performed. Then one of the two images is resized
+ relative to the other.
+
+"""
+
 import cv2
 import os
+import settings
 
 
 def cropped_black_boundary_images(imagepath):
+    """
+    This function performs the trimming of black edges formed around images. While doing this, firstly,
+     if the image is RGB, it converts this image to a grayscale image, then a threshold is applied to this grayscale
+     image to distinguish the black corners from the objects. Finally, by applying findContours to this threshold
+     image, the rectangular boundaries of the area outside the black corners are determined and
+     the new image is resized according to this limit.
+
+    Input:
+            imagepath - File path of the images to be cropped
+
+    Output:
+            crop_black - Cropped and resized image
+
+    Exeption:
+            Since this function is focused on thresholding the image, if you try this function with binary image,
+             you will not get an accurate result.
+    """
+    # Read the image
     img = cv2.imread(imagepath)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # If image is RGB, convert it into grayscale
+    if len(img.shape) == 3:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img
+
+    # Make in binary image for threshold value of 1
+    # cv2.THRESH_BINARY: If pixel intensity is greater than the set threshold, value set to 255, else set to 0 (black)
     _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+
+    # Find contours in it and then find bounding rectangle for it
     _, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnt = contours[0]
     x, y, w, h = cv2.boundingRect(cnt)
+    # Crop the image
     crop_black = img[y:y + h, x:x + w]
+
     return crop_black
 
-input_folder = "D:\\3_Sinif\Staj\\NIRalign"
-input_folder2 = "D:\\3_Sinif\Staj\\REDalign"
-directory = os.listdir(input_folder)
-image_list = []
-image_list2 = []
-directory = os.listdir(input_folder)
-directory2 = os.listdir(input_folder2)
-# print(directory)
 
-for files,files2 in zip(directory,directory2):
-        file_path = os.path.join(input_folder, files)
-        file_path2 = os.path.join(input_folder2, files2)
-        image_list.append(file_path)
-        image_list.sort(key=lambda image_list: image_list[:-5])
-        image_list2.append(file_path2)
-        image_list2.sort(key=lambda image_list2: image_list2[:-5])
-# print(image_list2)
+for i in range(len(settings.NIR_im_paths)):
 
-def cropped(crop,crop2):
-    h = crop.shape[0]
-    w = crop.shape[1]
-    crop2 = cv2.resize(crop2, (w, h))
-    return crop2
+    NIR_crop = cropped_black_boundary_images(settings.NIR_im_paths[i])
 
-for i in range(len(image_list)):
-    crop = cropped_black_boundary_images(image_list[i])
-    crop2 = cropped_black_boundary_images(image_list2[i])
-    crop2 = cropped(crop, crop2)
-    cv2.imwrite('D:\\3_Sinif\\Staj\\NIRCropped\\' "NIR" + str(i) + ".tif", cv2.cvtColor(crop, cv2.COLOR_RGB2GRAY))
-    cv2.imwrite('D:\\3_Sinif\\Staj\\REDCropped\\' "RED" + str(i) + ".tif", cv2.cvtColor(crop2, cv2.COLOR_RGB2GRAY))
+    RED_crop = cropped_black_boundary_images(settings.RED_im_paths[i])
+    RED_crop = cv2.resize(RED_crop, (NIR_crop.shape[1], NIR_crop.shape[0]))
+
+    cv2.imwrite(os.path.join(settings.out_NIR, "NIR" + str(i) + ".tif"), NIR_crop)
+    cv2.imwrite(os.path.join(settings.out_RED, "RED" + str(i) + ".tif"), RED_crop)
+
+
+
+
 

@@ -1,38 +1,47 @@
+# -*- coding: utf-8 -*-
+"""
+@author: Zeynep Miray
+
+In this script, the matching accuracy of the aligned images is measured by the def function below, and then
+ the results obtained using the logging module are saved in the differences.log file.
+
+"""
+
 import cv2
-import os
 import numpy as np
-
-input_folder = "D:\\3_Sinif\Staj\\NIRCropped"
-input_folder2 = "D:\\3_Sinif\Staj\\REDCropped"
-directory = os.listdir(input_folder)
-image_list = []
-image_list2 = []
-directory = os.listdir(input_folder)
-directory2 = os.listdir(input_folder2)
-# print(directory)
-for files, files2 in zip(directory, directory2):
-    file_path = os.path.join(input_folder, files)
-    file_path2 = os.path.join(input_folder2, files2)
-    image_list.append(file_path)
-    image_list.sort()
-    image_list2.append(file_path2)
-    image_list2.sort()
+import settings
+import logging
 
 
-def differencescalculation(img1_path, img2_path):
-    img1 = cv2.imread(img1_path, 0)
-    img2 = cv2.imread(img2_path, 0)
-    # --- take the absolute difference of the images ---
+logging.basicConfig(level=logging.INFO, filename='differences.log',  filemode='w')
+
+def differences_calculation(img1path, img2path):
+    """
+    This function was written to measure the matching accuracy of two aligned images. The Absdiff method used in
+     this function makes subtraction between two given matrices. Then the percentage is calculated from the result
+     of this subtraction.
+
+     Inputs:
+            img1path,img2path - File path of aligned, cropped and resized images of the same area
+
+    Output:
+            percentage - Percentage of match accuracy
+    """
+    # Read the images
+    img1 = cv2.imread(img1path, 0)
+    img2 = cv2.imread(img2path, 0)
+
+    # Take the absolute difference of the images
     res = cv2.absdiff(img1, img2)
 
-    # --- convert the result to integer type ---
+    # Convert the result to integer type
     res = res.astype(np.uint8)
 
-    # --- find percentage difference based on number of pixels that are not zero ---
+    # Find percentage difference based on number of pixels that are not zero ---
     percentage = (np.count_nonzero(res) * 100) / res.size
     return percentage
 
 
-for i in range(len(image_list)):
-    pct = differencescalculation(image_list[i], image_list2[i])
-    print(pct)
+for i in range(len(settings.NIRCropped_im_paths)):
+    pct = differences_calculation(settings.NIRCropped_im_paths[i], settings.REDCropped_im_paths[i])
+    logging.info(" {} %".format(pct))
