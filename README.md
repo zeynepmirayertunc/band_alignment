@@ -6,7 +6,7 @@
  
   \* Due to the fact that the images belong to agricultural land, two bands used in the calculation of NDVI, which is the most widely used plant index, were selected.
 
-
+--------------------------------
 - Alignment Code -- [NIR_REDcombine](https://github.com/zeynepmirayertunc/image_alignment/blob/master/NIR_REDcombine.py)
 - Code to reduce images meaningfully -- [NIR_REDbuffer](https://github.com/zeynepmirayertunc/image_alignment/blob/master/NIR_REDbuffer.py)
 - Code showing how different the images are from each another -- [NIR_REDdifferences](https://github.com/zeynepmirayertunc/image_alignment/blob/master/NIR_REDdifferences.py)
